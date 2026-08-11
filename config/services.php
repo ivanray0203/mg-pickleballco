@@ -40,10 +40,6 @@ return [
         'driver' => env('PAYMENT_DRIVER', 'paymongo'),
     ],
 
-    /*
-     * Fallbacks only. An admin can override these from Settings → PayMongo,
-     * in which case the stored (encrypted) value wins. See App\Settings\AppSettings.
-     */
     'paymongo' => [
         'public_key' => env('PAYMONGO_PUBLIC_KEY'),
         'secret_key' => env('PAYMONGO_SECRET_KEY'),

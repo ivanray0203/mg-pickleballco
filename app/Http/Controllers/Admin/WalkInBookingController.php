@@ -44,7 +44,9 @@ class WalkInBookingController extends Controller
         $selectedCourt = $request->integer('court_id') ?: null;
 
         if ($selectedCourt !== null) {
-            $court = $courts->firstWhere('id', $selectedCourt);
+            // Load the full model: availability reads is_active and the court's
+            // base operating hours, which the slim list above does not select.
+            $court = Court::query()->active()->find($selectedCourt);
 
             if ($court !== null) {
                 $date = $request->filled('date')

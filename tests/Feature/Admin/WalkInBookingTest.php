@@ -10,6 +10,7 @@ use App\Notifications\BookingConfirmed;
 use App\Services\Payments\PaymentGateway;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia;
 
 beforeEach(function () {
     $this->admin = User::factory()->admin()->create();
@@ -55,6 +56,29 @@ test('the walk-in form is only reachable by admins', function () {
     $this->actingAs($this->admin)
         ->get(route('admin.bookings.walk-in.create'))
         ->assertOk();
+});
+
+test('selecting a court returns open availability with bookable slots', function () {
+    $this->actingAs($this->admin)
+        ->get(route('admin.bookings.walk-in.create', [
+            'court_id' => $this->court->id,
+            'date' => now()->addDay()->toDateString(),
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('availability.is_open', true)
+            ->where('availability.bookable_date', true)
+            ->has('availability.slots', 16)
+        );
+});
+
+test('an inactive court yields no availability', function () {
+    $this->court->update(['is_active' => false]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.bookings.walk-in.create', ['court_id' => $this->court->id]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('availability', null));
 });
 
 test('a cash walk-in creates a confirmed booking, a guest, and a paid payment', function () {

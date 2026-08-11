@@ -1,53 +1,18 @@
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { update } from '@/routes/admin/settings';
-import type {
-    AdminSettings,
-    AuditLogEntry,
-    CredentialKey,
-    CredentialStatuses,
-} from '@/types';
+import type { AdminSettings, AuditLogEntry } from '@/types';
 
 type SettingsProps = {
     settings: AdminSettings;
-    credentials: CredentialStatuses;
     auditLogs: { data: AuditLogEntry[] };
 };
-
-/** The form carries a blank string per credential until one is typed. */
-type SettingsForm = AdminSettings & Record<CredentialKey, string>;
-
-const CREDENTIAL_FIELDS: { key: CredentialKey; label: string; hint: string }[] =
-    [
-        {
-            key: 'paymongo_public_key',
-            label: 'Public key',
-            hint: 'PAYMONGO_PUBLIC_KEY',
-        },
-        {
-            key: 'paymongo_secret_key',
-            label: 'Secret key',
-            hint: 'PAYMONGO_SECRET_KEY',
-        },
-        {
-            key: 'paymongo_webhook_secret',
-            label: 'Webhook secret',
-            hint: 'PAYMONGO_WEBHOOK_SECRET',
-        },
-    ];
 
 function formatDateTime(value: string | null): string {
     if (!value) {
@@ -62,50 +27,17 @@ function formatDateTime(value: string | null): string {
 
 export default function AdminSettingsPage({
     settings,
-    credentials,
     auditLogs,
 }: SettingsProps) {
-    const { data, setData, transform, put, processing, errors } =
-        useForm<SettingsForm>({
-            business_name: settings.business_name,
-            contact_email: settings.contact_email ?? '',
-            contact_number: settings.contact_number ?? '',
-            address: settings.address ?? '',
-            booking_hold_minutes: settings.booking_hold_minutes,
-            max_booking_hours: settings.max_booking_hours,
-            advance_booking_days: settings.advance_booking_days,
-            gcash_enabled: settings.gcash_enabled,
-            paymongo_public_key: '',
-            paymongo_secret_key: '',
-            paymongo_webhook_secret: '',
-        });
-
-    // Credentials the admin asked to remove, so the .env fallback takes over.
-    const [cleared, setCleared] = useState<CredentialKey[]>([]);
-
-    const toggleCleared = (key: CredentialKey) => {
-        setData(key, '');
-        setCleared((current) =>
-            current.includes(key)
-                ? current.filter((item) => item !== key)
-                : [...current, key],
-        );
-    };
-
-    /**
-     * A credential is only sent when it was typed or explicitly cleared —
-     * an untouched field is omitted so the stored value survives the save.
-     */
-    transform((payload) => {
-        const next: Record<string, unknown> = { ...payload };
-
-        CREDENTIAL_FIELDS.forEach(({ key }) => {
-            if (payload[key] === '' && !cleared.includes(key)) {
-                delete next[key];
-            }
-        });
-
-        return next;
+    const { data, setData, put, processing, errors } = useForm<AdminSettings>({
+        business_name: settings.business_name,
+        contact_email: settings.contact_email ?? '',
+        contact_number: settings.contact_number ?? '',
+        address: settings.address ?? '',
+        booking_hold_minutes: settings.booking_hold_minutes,
+        max_booking_hours: settings.max_booking_hours,
+        advance_booking_days: settings.advance_booking_days,
+        gcash_enabled: settings.gcash_enabled,
     });
 
     const submit = (event: React.FormEvent) => {
@@ -270,7 +202,8 @@ export default function AdminSettingsPage({
                                     GCash enabled
                                 </span>
                                 <span className="text-sm text-muted-foreground">
-                                    Offer GCash checkout to customers.
+                                    Provider credentials are configured on the
+                                    server, not here.
                                 </span>
                             </span>
                         </label>
@@ -278,72 +211,6 @@ export default function AdminSettingsPage({
                             className="mt-2"
                             message={errors.gcash_enabled}
                         />
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>PayMongo</CardTitle>
-                        <CardDescription>
-                            Keys set here are stored encrypted and take priority
-                            over the server&apos;s .env file. Leave a field
-                            blank to keep the saved value.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                        {CREDENTIAL_FIELDS.map(({ key, label, hint }) => {
-                            const status = credentials[key];
-                            const isCleared = cleared.includes(key);
-
-                            return (
-                                <div key={key} className="grid gap-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <Label htmlFor={key}>{label}</Label>
-                                        {status.source === 'database' && (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() =>
-                                                    toggleCleared(key)
-                                                }
-                                            >
-                                                {isCleared
-                                                    ? 'Keep saved key'
-                                                    : 'Use .env instead'}
-                                            </Button>
-                                        )}
-                                    </div>
-                                    <Input
-                                        id={key}
-                                        type="password"
-                                        autoComplete="off"
-                                        disabled={isCleared}
-                                        value={data[key]}
-                                        onChange={(e) =>
-                                            setData(key, e.target.value)
-                                        }
-                                        placeholder={
-                                            status.configured
-                                                ? 'Leave blank to keep the current key'
-                                                : `Not set — falls back to ${hint}`
-                                        }
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        {isCleared
-                                            ? `Will be removed on save, falling back to ${hint}.`
-                                            : status.configured
-                                              ? `${status.masked} · from ${
-                                                    status.source === 'database'
-                                                        ? 'this page'
-                                                        : hint
-                                                }`
-                                              : 'Not configured.'}
-                                    </p>
-                                    <InputError message={errors[key]} />
-                                </div>
-                            );
-                        })}
                     </CardContent>
                 </Card>
 

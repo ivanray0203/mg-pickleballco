@@ -68,6 +68,31 @@ class CourtService
     }
 
     /**
+     * Whether a court can be permanently removed.
+     *
+     * Bookings and open play sessions both cascade on delete, so a court that
+     * has ever been used cannot be removed without destroying booking and
+     * payment history. Those courts must be deactivated instead.
+     */
+    public function canDelete(Court $court): bool
+    {
+        return ! $court->bookings()->exists()
+            && ! $court->openPlaySessions()->exists();
+    }
+
+    /**
+     * Permanently remove a court along with its image and weekly schedule.
+     *
+     * Callers must check {@see self::canDelete()} first.
+     */
+    public function delete(Court $court): void
+    {
+        $this->images->delete($court->image_path);
+
+        $court->delete();
+    }
+
+    /**
      * Map validated form data to persistable attributes, converting the
      * dollar-based rate into integer cents.
      *

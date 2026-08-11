@@ -10,6 +10,7 @@ use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\PayMongoGateway;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia;
 
 beforeEach(function () {
@@ -39,7 +40,7 @@ beforeEach(function () {
 /**
  * Post a genuinely-signed provider webhook for a paid checkout session.
  */
-function paidWebhook(Payment $payment): \Illuminate\Testing\TestResponse
+function paidWebhook(Payment $payment): TestResponse
 {
     $raw = json_encode([
         'data' => [
@@ -117,6 +118,50 @@ test('pay creates a payment attempt with the server-derived amount and redirects
         ->and($payment->amount)->toBe(80000) // matches the booking, not the browser
         ->and($payment->status)->toBe(PaymentStatus::Pending)
         ->and($payment->provider_reference)->toBe('cs_test_abc');
+});
+
+// --- Embedded checkout ------------------------------------------------------
+
+test('the checkout page reports whether the provider checkout is embedded', function () {
+    $this->actingAs($this->customer)
+        ->get(route('bookings.checkout', $this->booking))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('embed_checkout', false));
+
+    config()->set('services.paymongo.embed_checkout', true);
+
+    $this->actingAs($this->customer)
+        ->get(route('bookings.checkout', $this->booking))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('embed_checkout', true));
+});
+
+test('an embedded pay request returns the checkout url as json instead of redirecting', function () {
+    config()->set('services.paymongo.embed_checkout', true);
+
+    $this->actingAs($this->customer)
+        ->postJson(route('bookings.pay', $this->booking), ['embedded' => true])
+        ->assertOk()
+        ->assertExactJson(['checkout_url' => 'https://checkout.paymongo.test/cs_test_abc']);
+
+    expect(Payment::first()->status)->toBe(PaymentStatus::Pending);
+});
+
+test('an embedded pay request on a dead hold reports a conflict rather than a redirect', function () {
+    config()->set('services.paymongo.embed_checkout', true);
+    $this->booking->update(['expires_at' => Carbon::now()->subMinute()]);
+
+    $this->actingAs($this->customer)
+        ->postJson(route('bookings.pay', $this->booking), ['embedded' => true])
+        ->assertStatus(409);
+
+    expect(Payment::count())->toBe(0);
+});
+
+test('the embedded flag is ignored while embedding is switched off', function () {
+    // Guards against a crafted request coaxing the URL out as JSON when the
+    // site is still on the redirect flow.
+    $this->actingAs($this->customer)
+        ->post(route('bookings.pay', $this->booking), ['embedded' => true])
+        ->assertRedirect('https://checkout.paymongo.test/cs_test_abc');
 });
 
 test('a non-owner cannot pay for a booking', function () {

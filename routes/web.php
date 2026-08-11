@@ -9,10 +9,11 @@ use App\Http\Controllers\Client\NotificationController;
 use App\Http\Controllers\Client\OpenPlayController;
 use App\Http\Controllers\Client\OpenPlayGameSubmissionController;
 use App\Http\Controllers\Client\PaymentController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Webhooks\PayMongoWebhookController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', HomeController::class)->name('home');
 
 // Social (OAuth) login. Guests only; the provider is validated in the
 // controller against an allow-list.

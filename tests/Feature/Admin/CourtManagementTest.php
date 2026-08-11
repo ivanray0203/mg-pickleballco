@@ -1,7 +1,10 @@
 <?php
 
 use App\Enums\CourtType;
+use App\Models\Booking;
 use App\Models\Court;
+use App\Models\CourtSchedule;
+use App\Models\OpenPlaySession;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -70,6 +73,7 @@ test('customers cannot access court management', function () {
     $this->actingAs($this->customer)->get(route('admin.courts.edit', $court))->assertForbidden();
     $this->actingAs($this->customer)->patch(route('admin.courts.update', $court), validCourtPayload())->assertForbidden();
     $this->actingAs($this->customer)->patch(route('admin.courts.toggle-status', $court))->assertForbidden();
+    $this->actingAs($this->customer)->delete(route('admin.courts.destroy', $court))->assertForbidden();
 });
 
 test('guests are redirected to login', function () {
@@ -157,6 +161,80 @@ test('replacing a court image deletes the previous file', function () {
     expect($court->image_path)->not->toBe($oldPath);
     Storage::disk('public')->assertMissing($oldPath);
     Storage::disk('public')->assertExists($court->image_path);
+});
+
+test('admin can delete a court that has never been used', function () {
+    Storage::fake('public');
+
+    $court = Court::factory()->create([
+        'image_path' => UploadedFile::fake()->image('court.jpg')->store('courts', 'public'),
+    ]);
+    CourtSchedule::factory()->for($court)->create();
+    $imagePath = $court->image_path;
+
+    $this->actingAs($this->admin)
+        ->delete(route('admin.courts.destroy', $court))
+        ->assertRedirect(route('admin.courts.index'));
+
+    $this->assertDatabaseMissing('courts', ['id' => $court->id]);
+    $this->assertDatabaseMissing('court_schedules', ['court_id' => $court->id]);
+    Storage::disk('public')->assertMissing($imagePath);
+});
+
+test('deleting a court is recorded in the audit log', function () {
+    $court = Court::factory()->create(['name' => 'Doomed Court']);
+
+    $this->actingAs($this->admin)->delete(route('admin.courts.destroy', $court));
+
+    $this->assertDatabaseHas('audit_logs', [
+        'user_id' => $this->admin->id,
+        'action' => 'court.deleted',
+        'auditable_id' => $court->id,
+    ]);
+});
+
+test('a court with bookings cannot be deleted', function () {
+    $court = Court::factory()->create();
+    Booking::factory()->for($court)->create();
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.courts.index'))
+        ->delete(route('admin.courts.destroy', $court))
+        ->assertRedirect(route('admin.courts.index'));
+
+    $this->assertDatabaseHas('courts', ['id' => $court->id]);
+});
+
+test('a court with open play sessions cannot be deleted', function () {
+    $court = Court::factory()->create();
+    OpenPlaySession::factory()->for($court)->create();
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.courts.index'))
+        ->delete(route('admin.courts.destroy', $court))
+        ->assertRedirect(route('admin.courts.index'));
+
+    $this->assertDatabaseHas('courts', ['id' => $court->id]);
+});
+
+test('the court list flags which courts can be deleted', function () {
+    $unused = Court::factory()->create(['name' => 'Unused Court']);
+    $booked = Court::factory()->create(['name' => 'Booked Court']);
+    Booking::factory()->for($booked)->create();
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.courts.index', ['search' => 'Unused']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('courts.data.0.id', $unused->id)
+            ->where('courts.data.0.can_delete', true)
+        );
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.courts.index', ['search' => 'Booked']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('courts.data.0.id', $booked->id)
+            ->where('courts.data.0.can_delete', false)
+        );
 });
 
 test('admin can activate and deactivate a court', function () {

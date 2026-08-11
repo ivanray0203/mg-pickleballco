@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, useHttp } from '@inertiajs/react';
 import {
     ArrowLeft,
     CalendarDays,
@@ -6,17 +6,25 @@ import {
     LoaderCircle,
     Smartphone,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { CheckoutFrameDialog } from '@/components/client/checkout-frame-dialog';
 import { HoldCountdown } from '@/components/client/hold-countdown';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { CheckoutOutcome } from '@/lib/embedded-checkout';
 import { formatHour } from '@/lib/time';
 import { pay } from '@/routes/bookings';
 import { show as bookingShow } from '@/routes/bookings';
+import {
+    cancel as paymentCancel,
+    success as paymentSuccess,
+} from '@/routes/bookings/payment';
 import type { Booking } from '@/types';
 
 type CheckoutProps = {
     booking: { data: Booking };
+    /** Frame the hosted checkout on-site instead of redirecting away. */
+    embed_checkout: boolean;
 };
 
 function formatLongDate(value: string): string {
@@ -28,15 +36,56 @@ function formatLongDate(value: string): string {
     });
 }
 
-export default function Checkout({ booking }: CheckoutProps) {
+export default function Checkout({
+    booking,
+    embed_checkout: embedCheckout,
+}: CheckoutProps) {
     const data = booking.data;
     const [expired, setExpired] = useState(false);
-    const { post, processing } = useForm({});
+    const [frameUrl, setFrameUrl] = useState<string | null>(null);
+
+    // Redirect path: a normal Inertia POST that ends in an external location.
+    const redirectForm = useForm({});
+    // Embed path: fetch the provider URL as JSON and frame it in place.
+    const embedRequest = useHttp<
+        { embedded: boolean },
+        { checkout_url: string }
+    >({ embedded: true });
+
+    const processing = embedCheckout
+        ? embedRequest.processing
+        : redirectForm.processing;
 
     const submit = (event: React.FormEvent) => {
         event.preventDefault();
-        post(pay.url({ booking: data.id }));
+
+        if (!embedCheckout) {
+            redirectForm.post(pay.url({ booking: data.id }));
+
+            return;
+        }
+
+        embedRequest
+            .post(pay.url({ booking: data.id }))
+            .then((response) => setFrameUrl(response.checkout_url))
+            // The hold may have lapsed between render and click; the booking
+            // page states why far better than a dead modal would.
+            .catch(() => router.visit(bookingShow.url({ booking: data.id })));
     };
+
+    const handleOutcome = useCallback(
+        (outcome: CheckoutOutcome) => {
+            setFrameUrl(null);
+
+            const target =
+                outcome === 'success'
+                    ? paymentSuccess.url({ booking: data.id })
+                    : paymentCancel.url({ booking: data.id });
+
+            router.visit(target);
+        },
+        [data.id],
+    );
 
     return (
         <>
@@ -103,8 +152,9 @@ export default function Checkout({ booking }: CheckoutProps) {
                             <div className="grid">
                                 <span className="font-medium">GCash</span>
                                 <span className="text-xs text-muted-foreground">
-                                    You'll be redirected to GCash to complete
-                                    payment securely.
+                                    {embedCheckout
+                                        ? 'Pay securely without leaving this page.'
+                                        : "You'll be redirected to GCash to complete payment securely."}
                                 </span>
                             </div>
                         </div>
@@ -138,6 +188,14 @@ export default function Checkout({ booking }: CheckoutProps) {
                     </p>
                 )}
             </div>
+
+            {embedCheckout && (
+                <CheckoutFrameDialog
+                    url={frameUrl}
+                    onOutcome={handleOutcome}
+                    onDismiss={() => setFrameUrl(null)}
+                />
+            )}
         </>
     );
 }

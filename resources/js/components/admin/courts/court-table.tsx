@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { CalendarDays, Clock, ImageIcon, Pencil } from 'lucide-react';
+import { CourtDeleteDialog } from '@/components/admin/courts/court-delete-dialog';
 import { CourtStatusBadge } from '@/components/admin/courts/court-status-badge';
 import { CourtStatusToggle } from '@/components/admin/courts/court-status-toggle';
 import { CourtTypeBadge } from '@/components/admin/courts/court-type-badge';
@@ -127,6 +128,7 @@ export function CourtTable({ courts }: { courts: Court[] }) {
                                         </Link>
                                     </Button>
                                     <CourtStatusToggle court={court} />
+                                    <CourtDeleteDialog court={court} />
                                 </div>
                             </TableCell>
                         </TableRow>

@@ -154,17 +154,21 @@ test('an active session blocks a private booking over its window', function () {
     expect($available)->toBeFalse();
 });
 
-test('the daily schedule board shows an open play session', function () {
+test('the weekly schedule board shows an open play session', function () {
     OpenPlaySession::factory()->forSlot($this->court, $this->date, 18, 20)
-        ->create(['title' => 'Evening Open Play']);
+        ->create(['title' => 'Evening Open Play', 'capacity' => 12]);
 
     $this->actingAs($this->admin)
         ->get(route('admin.schedule.index', ['date' => $this->date]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('admin/schedule')
-            ->where('schedule.courts.0.slots', fn ($slots) => collect($slots)
-                ->contains(fn ($slot) => $slot['status'] === 'session'))
+            ->where('schedule.courts.0.summary.session', 1)
+            ->where('schedule.courts.0.cells.'.$this->date.'.18:00', [
+                'status' => 'session',
+                'detail' => '0/12',
+                'title' => 'Evening Open Play',
+            ])
         );
 });
 

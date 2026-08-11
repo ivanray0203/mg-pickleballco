@@ -23,9 +23,9 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             AdminUserSeeder::class,
-            CourtSeeder::class,
-            BookingSeeder::class,
-            OpenPlaySeeder::class,
+            // CourtSeeder::class,
+            // BookingSeeder::class,
+            // OpenPlaySeeder::class,
         ]);
     }
 }

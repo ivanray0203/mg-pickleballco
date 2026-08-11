@@ -11,9 +11,10 @@ test('a guest is redirected to the provider', function () {
     $this->get(route('oauth.redirect', 'google'))->assertRedirect();
 });
 
-test('an unknown provider is rejected', function () {
-    $this->get(route('oauth.redirect', 'myspace'))->assertNotFound();
-});
+test('an unsupported provider is rejected', function (string $provider) {
+    $this->get(route('oauth.redirect', $provider))->assertNotFound();
+    $this->get(route('oauth.callback', $provider))->assertNotFound();
+})->with(['myspace', 'facebook']);
 
 test('a new user is created and logged in via google', function () {
     Socialite::fake('google', SocialiteUser::fake([
@@ -43,19 +44,19 @@ test('an existing account with the same email is linked, not duplicated', functi
         'name' => 'Existing User',
     ]);
 
-    Socialite::fake('facebook', SocialiteUser::fake([
-        'id' => 'fb-999',
+    Socialite::fake('google', SocialiteUser::fake([
+        'id' => 'google-999',
         'name' => 'Existing User',
         'email' => 'existing@example.com',
     ]));
 
-    $this->get(route('oauth.callback', 'facebook'))->assertRedirect(route('dashboard'));
+    $this->get(route('oauth.callback', 'google'))->assertRedirect(route('dashboard'));
 
     $existing->refresh();
 
     expect(User::count())->toBe(1)
-        ->and($existing->provider)->toBe('facebook')
-        ->and($existing->provider_id)->toBe('fb-999');
+        ->and($existing->provider)->toBe('google')
+        ->and($existing->provider_id)->toBe('google-999');
 
     $this->assertAuthenticatedAs($existing);
 });

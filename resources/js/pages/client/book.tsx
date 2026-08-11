@@ -2,10 +2,15 @@ import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, CalendarX2 } from 'lucide-react';
 import { useState } from 'react';
 import { BookingSummary } from '@/components/client/booking-summary';
-import { DurationPicker } from '@/components/client/duration-picker';
 import { SlotGrid } from '@/components/client/slot-grid';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatHour } from '@/lib/time';
@@ -44,6 +49,7 @@ export default function Book({
     const courtData = court.data;
     const [selectedStart, setSelectedStart] = useState<string | null>(null);
     const [duration, setDuration] = useState(1);
+    const [notice, setNotice] = useState<string | null>(null);
 
     // Reset the selection whenever the day (and its availability) changes.
     // Adjusting state during render (tracking the previous date) is the
@@ -54,6 +60,7 @@ export default function Book({
         setTrackedDate(availability.date);
         setSelectedStart(null);
         setDuration(1);
+        setNotice(null);
     }
 
     const changeDate = (value: string) => {
@@ -73,12 +80,86 @@ export default function Book({
         );
     };
 
-    const selectedSlot = availability.slots.find(
-        (slot) => slot.time === selectedStart,
-    );
-    const maxDuration = selectedSlot?.max_duration ?? 0;
+    const slots = availability.slots;
+    const startIndex = selectedStart
+        ? slots.findIndex((slot) => slot.time === selectedStart)
+        : -1;
+    const endIndex = startIndex === -1 ? -1 : startIndex + duration - 1;
+    const selectedTimes =
+        startIndex === -1
+            ? []
+            : slots
+                  .slice(startIndex, startIndex + duration)
+                  .map((slot) => slot.time);
 
-    const selectStart = (time: string) => {
+    /**
+     * Bookings are one contiguous block, so a tap either extends the run by an
+     * adjacent hour, trims it, or starts a fresh selection. `max_duration` on
+     * the starting slot already accounts for gaps and the configured cap, so it
+     * is the only limit an extension has to respect.
+     *
+     * Tapping an adjacent hour that would breach the cap keeps the current
+     * selection and explains why — silently restarting there reads as the grid
+     * losing the selection for no reason.
+     */
+    const toggleSlot = (time: string) => {
+        const index = slots.findIndex((slot) => slot.time === time);
+
+        if (index === -1 || !slots[index].available) {
+            return;
+        }
+
+        setNotice(null);
+
+        if (startIndex === -1) {
+            setSelectedStart(time);
+            setDuration(1);
+
+            return;
+        }
+
+        if (index >= startIndex && index <= endIndex) {
+            if (duration === 1) {
+                setSelectedStart(null);
+            } else if (index === startIndex) {
+                setSelectedStart(slots[startIndex + 1].time);
+                setDuration(duration - 1);
+            } else if (index === endIndex) {
+                setDuration(duration - 1);
+            } else {
+                setDuration(index - startIndex + 1);
+            }
+
+            return;
+        }
+
+        const isAdjacent = index === endIndex + 1 || index === startIndex - 1;
+
+        if (isAdjacent) {
+            const extendingBack = index === startIndex - 1;
+            const limit = extendingBack
+                ? slots[index].max_duration
+                : slots[startIndex].max_duration;
+
+            if (duration + 1 > limit) {
+                setNotice(
+                    `You can book up to ${constraints.max_duration} ${
+                        constraints.max_duration === 1 ? 'hour' : 'hours'
+                    } at a time.`,
+                );
+
+                return;
+            }
+
+            if (extendingBack) {
+                setSelectedStart(time);
+            }
+
+            setDuration(duration + 1);
+
+            return;
+        }
+
         setSelectedStart(time);
         setDuration(1);
     };
@@ -129,7 +210,12 @@ export default function Book({
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>2. Select a start time</CardTitle>
+                                <CardTitle>2. Select your hours</CardTitle>
+                                <CardDescription>
+                                    Tap an hour, then tap the hours next to it
+                                    to book a longer block — up to{' '}
+                                    {constraints.max_duration} hours.
+                                </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {!canSelectTimes ? (
@@ -152,10 +238,18 @@ export default function Book({
                                 ) : (
                                     <div className="flex flex-col gap-4">
                                         <SlotGrid
-                                            slots={availability.slots}
-                                            selected={selectedStart}
-                                            onSelect={selectStart}
+                                            slots={slots}
+                                            selected={selectedTimes}
+                                            onSelect={toggleSlot}
                                         />
+                                        {notice && (
+                                            <p
+                                                role="status"
+                                                className="text-sm text-muted-foreground"
+                                            >
+                                                {notice}
+                                            </p>
+                                        )}
                                         <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                                             <span className="flex items-center gap-1.5">
                                                 <span className="size-3 rounded border border-border bg-background" />
@@ -174,21 +268,6 @@ export default function Book({
                                 )}
                             </CardContent>
                         </Card>
-
-                        {selectedStart && maxDuration > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>3. Select duration</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <DurationPicker
-                                        max={maxDuration}
-                                        selected={duration}
-                                        onSelect={setDuration}
-                                    />
-                                </CardContent>
-                            </Card>
-                        )}
                     </div>
 
                     <div className="flex flex-col gap-4">
@@ -222,7 +301,7 @@ export default function Book({
                         ) : (
                             <Card>
                                 <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                                    Select a date and start time to see your
+                                    Select a date and your hours to see your
                                     booking summary.
                                 </CardContent>
                             </Card>

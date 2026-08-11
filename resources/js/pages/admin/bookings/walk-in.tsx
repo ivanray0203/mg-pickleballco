@@ -472,7 +472,9 @@ export default function WalkIn({
                                         <SlotGrid
                                             slots={availability.slots}
                                             selected={
-                                                form.data.start_time || null
+                                                form.data.start_time
+                                                    ? [form.data.start_time]
+                                                    : []
                                             }
                                             onSelect={(time) => {
                                                 form.setData(

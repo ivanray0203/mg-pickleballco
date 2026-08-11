@@ -34,7 +34,7 @@ export const adminNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'Courts', href: courtsIndex(), icon: LandPlot },
     { title: 'Equipment', href: equipmentIndex(), icon: Dumbbell },
-    { title: 'Daily schedule', href: scheduleIndex(), icon: CalendarRange },
+    { title: 'Court Booking', href: scheduleIndex(), icon: CalendarRange },
     { title: 'Open play', href: openPlayIndex(), icon: Volleyball },
     { title: 'Seasons', href: seasonsIndex(), icon: Trophy },
     { title: 'Bookings', href: bookingsIndex(), icon: CalendarCheck },

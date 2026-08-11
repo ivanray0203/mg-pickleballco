@@ -29,4 +29,9 @@ class CourtPolicy
     {
         return false;
     }
+
+    public function delete(User $user, Court $court): bool
+    {
+        return false;
+    }
 }

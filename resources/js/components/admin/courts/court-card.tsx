@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { Clock, ImageIcon, Pencil } from 'lucide-react';
+import { CourtDeleteDialog } from '@/components/admin/courts/court-delete-dialog';
 import { CourtStatusBadge } from '@/components/admin/courts/court-status-badge';
 import { CourtStatusToggle } from '@/components/admin/courts/court-status-toggle';
 import { CourtTypeBadge } from '@/components/admin/courts/court-type-badge';
@@ -45,19 +46,22 @@ export function CourtCard({ court }: { court: Court }) {
                     </span>
                 </div>
 
-                <div className="flex items-center gap-2 border-t border-border pt-3">
-                    <Button
-                        asChild
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                    >
-                        <Link href={edit({ court: court.id })}>
-                            <Pencil className="size-4" />
-                            Edit
-                        </Link>
-                    </Button>
-                    <CourtStatusToggle court={court} />
+                <div className="flex flex-col gap-2 border-t border-border pt-3">
+                    <div className="flex items-center gap-2">
+                        <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                        >
+                            <Link href={edit({ court: court.id })}>
+                                <Pencil className="size-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                        <CourtStatusToggle court={court} />
+                    </div>
+                    <CourtDeleteDialog court={court} variant="block" />
                 </div>
             </CardContent>
         </Card>

@@ -161,7 +161,7 @@ test('cancelling never hard-deletes the booking', function () {
     expect(Booking::whereKey($booking->id)->exists())->toBeTrue();
 });
 
-test('admin can view the daily schedule across courts', function () {
+test('admin can view the weekly schedule across courts', function () {
     $courtA = Court::factory()->create(['name' => 'Court A']);
     Court::factory()->create(['name' => 'Court B']);
 
@@ -175,13 +175,38 @@ test('admin can view the daily schedule across courts', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('admin/schedule')
             ->where('date', '2026-08-05')
+            // 2026-08-05 is a Wednesday; the board snaps to its Monday.
+            ->where('schedule.start_date', '2026-08-03')
+            ->where('schedule.end_date', '2026-08-09')
+            ->where('schedule.range_label', 'Aug 3 – Aug 9, 2026')
+            ->has('schedule.days', 7)
+            ->where('schedule.hours.0', ['hour' => '08:00', 'label' => '8:00 AM'])
             ->has('schedule.courts', 3)
             ->where('schedule.courts', function ($courts) {
                 $courtA = collect($courts)->firstWhere('name', 'Court A');
 
-                return $courtA['slots'][0]['label'] === '8:00 AM'
-                    && $courtA['slots'][0]['status'] === 'booked';
+                return $courtA['cells']['2026-08-05']['08:00']['status'] === 'booked'
+                    && $courtA['cells']['2026-08-05']['09:00']['status'] === 'available'
+                    && $courtA['summary']['booked'] === 1;
             })
+        );
+});
+
+test('the weekly schedule can be paged and snaps to Monday', function () {
+    Court::factory()->create();
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.schedule.index', ['date' => '2026-08-05']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('schedule.prev_date', '2026-07-27')
+            ->where('schedule.next_date', '2026-08-10')
+        );
+
+    // Any day of a week resolves to the same board.
+    $this->actingAs($this->admin)
+        ->get(route('admin.schedule.index', ['date' => '2026-08-09']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('schedule.start_date', '2026-08-03')
         );
 });
 

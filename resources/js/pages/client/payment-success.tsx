@@ -3,6 +3,7 @@ import { CircleCheck, LoaderCircle, TriangleAlert } from 'lucide-react';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { notifyCheckoutOutcome } from '@/lib/embedded-checkout';
 import { formatHour } from '@/lib/time';
 import { book } from '@/routes';
 import { show as bookingShow } from '@/routes/bookings';
@@ -29,6 +30,13 @@ export default function PaymentSuccess({
     const data = booking.data;
     // Still awaiting the authoritative webhook confirmation.
     const awaiting = !confirmed && data.status === 'pending_payment';
+
+    // When the hosted checkout is framed on-site, PayMongo lands the frame
+    // here. Hand back to the host page so it can close the modal rather than
+    // leaving this page rendered inside a small iframe.
+    useEffect(() => {
+        notifyCheckoutOutcome('success');
+    }, []);
 
     // Poll the server for the real status while we wait for the webhook.
     useEffect(() => {

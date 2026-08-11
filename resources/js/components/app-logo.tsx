@@ -7,7 +7,7 @@ export default function AppLogo() {
         <>
             <div className="flex aspect-square size-8 items-center justify-center overflow-hidden rounded-md bg-white">
                 <img
-                    src="/storage/images/logo.png"
+                    src="/images/logo-mark.png"
                     alt={typeof name === 'string' ? name : 'Logo'}
                     className="size-full object-contain"
                 />

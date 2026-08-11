@@ -15,7 +15,7 @@ class DailyScheduleController extends Controller
     public function __construct(private DailyScheduleService $schedule) {}
 
     /**
-     * Show the day's availability across all active courts.
+     * Show a week of availability across every court.
      */
     public function index(Request $request): Response
     {
@@ -25,7 +25,7 @@ class DailyScheduleController extends Controller
 
         return Inertia::render('admin/schedule', [
             'date' => $date->toDateString(),
-            'schedule' => $this->schedule->boardForDate($date),
+            'schedule' => $this->schedule->weekBoard($date),
         ]);
     }
 

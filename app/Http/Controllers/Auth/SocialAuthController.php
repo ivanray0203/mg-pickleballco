@@ -17,7 +17,7 @@ class SocialAuthController extends Controller
      *
      * @var array<int, string>
      */
-    public const PROVIDERS = ['google', 'facebook'];
+    public const PROVIDERS = ['google'];
 
     /**
      * Redirect the user to the provider's OAuth consent screen.

@@ -13,6 +13,8 @@ export type Court = {
     closing_time: string;
     opening_hours: string;
     is_active: boolean;
+    /** False when the court has bookings or open play sessions tied to it. */
+    can_delete: boolean;
     image_url: string | null;
     created_at: string | null;
 };

@@ -25,7 +25,8 @@ class SettingsController extends Controller
     public function edit(): Response
     {
         return Inertia::render('admin/settings', [
-            'settings' => $this->settings->all(),
+            'settings' => $this->settings->withoutSecrets(),
+            'credentials' => $this->settings->credentialStatus(),
             'auditLogs' => AuditLogResource::collection(
                 AuditLog::query()->with('user')->latest()->limit(15)->get(),
             ),

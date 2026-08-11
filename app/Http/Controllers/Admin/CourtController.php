@@ -36,6 +36,7 @@ class CourtController extends Controller
         ];
 
         $courts = Court::query()
+            ->withCount(['bookings', 'openPlaySessions'])
             ->when($filters['search'], fn ($query, $search) => $query->where('name', 'like', "%{$search}%"))
             ->when($filters['type'], fn ($query, $type) => $query->where('type', $type))
             ->when($filters['status'], fn ($query, $status) => $query->where('is_active', $status === 'active'))
@@ -122,5 +123,32 @@ class CourtController extends Controller
         ]);
 
         return back();
+    }
+
+    /**
+     * Permanently remove a court that has never been used.
+     */
+    public function destroy(Court $court): RedirectResponse
+    {
+        $this->authorize('delete', $court);
+
+        if (! $this->courts->canDelete($court)) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => __('This court has bookings or open play sessions and cannot be deleted. Deactivate it instead.'),
+            ]);
+
+            return back();
+        }
+
+        $name = $court->name;
+
+        $this->courts->delete($court);
+
+        $this->audit->log('court.deleted', $court, ['name' => $name]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Court deleted.')]);
+
+        return to_route('admin.courts.index');
     }
 }

@@ -40,23 +40,33 @@ return [
         'driver' => env('PAYMENT_DRIVER', 'paymongo'),
     ],
 
+    /*
+     * Fallbacks only. An admin can override these from Settings → PayMongo,
+     * in which case the stored (encrypted) value wins. See App\Settings\AppSettings.
+     */
     'paymongo' => [
+        'public_key' => env('PAYMONGO_PUBLIC_KEY'),
         'secret_key' => env('PAYMONGO_SECRET_KEY'),
         'webhook_secret' => env('PAYMONGO_WEBHOOK_SECRET'),
         'success_url' => env('PAYMONGO_SUCCESS_URL'),
         'cancel_url' => env('PAYMONGO_CANCEL_URL'),
+
+        /*
+         * Render the hosted checkout in an on-site modal instead of sending the
+         * customer away to checkout.paymongo.com.
+         *
+         * Leave this off until PayMongo has added this site's domain to the
+         * `frame-ancestors` directive on checkout.paymongo.com — until they do,
+         * the browser refuses to render the frame and the customer sees a blank
+         * modal. Ask support@paymongo.com to allowlist the domain first.
+         */
+        'embed_checkout' => env('PAYMONGO_EMBED_CHECKOUT', false),
     ],
 
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
-    ],
-
-    'facebook' => [
-        'client_id' => env('FACEBOOK_CLIENT_ID'),
-        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
-        'redirect' => env('FACEBOOK_REDIRECT_URI', '/auth/facebook/callback'),
     ],
 
 ];

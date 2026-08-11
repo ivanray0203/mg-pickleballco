@@ -1,7 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
 import { XCircle } from 'lucide-react';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { notifyCheckoutOutcome } from '@/lib/embedded-checkout';
 import { book } from '@/routes';
 import { checkout } from '@/routes/bookings';
 import type { Booking } from '@/types';
@@ -16,6 +18,11 @@ export default function PaymentCancelled({
     can_retry,
 }: PaymentCancelledProps) {
     const data = booking.data;
+
+    // Reached inside the on-site checkout frame when the customer backs out.
+    useEffect(() => {
+        notifyCheckoutOutcome('cancelled');
+    }, []);
 
     return (
         <>

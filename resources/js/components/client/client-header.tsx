@@ -1,8 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Bell, Menu } from 'lucide-react';
 import { useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import { clientNavItems } from '@/components/client/client-nav-items';
+import PaddleMark from '@/components/paddle-mark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,9 +30,9 @@ function Brand() {
     return (
         <Link href={dashboard()} className="flex items-center gap-2">
             <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <AppLogoIcon className="size-5 fill-current" />
+                <PaddleMark className="size-5" />
             </span>
-            <span className="text-base font-semibold">{name}</span>
+            <span className="font-brand text-2xl text-primary">{name}</span>
         </Link>
     );
 }

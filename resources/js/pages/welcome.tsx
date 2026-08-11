@@ -1,104 +1,117 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
-    CalendarCheck,
+    Bell,
+    CalendarDays,
     Check,
-    Clock,
+    CircleCheck,
     CreditCard,
     Dumbbell,
     LayoutGrid,
-    MapPin,
-    ShieldCheck,
+    ShoppingBag,
     Sparkles,
+    Users,
 } from 'lucide-react';
 import { useState } from 'react';
 import { AuthModal } from '@/components/auth-modal';
 import type { AuthMode } from '@/components/auth-modal';
+import PaddleMark from '@/components/paddle-mark';
 import { Button } from '@/components/ui/button';
 import { dashboard } from '@/routes';
+import type { Equipment } from '@/types/equipment';
 
-const BRAND = 'Skye Paddle';
+const BRAND = 'Pickleball Booking System';
 
-/** Inline pickleball paddle mark used as the brand logo. */
-function PaddleMark({ className }: { className?: string }) {
-    return (
-        <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            className={className}
-            aria-hidden="true"
-        >
-            {/* Paddle face */}
-            <path
-                d="M12 1.8c4.3 0 7.4 3.2 7.4 7.3 0 3.9-2.7 6.7-6 7.2v3.1a1.4 1.4 0 0 1-2.8 0v-3.1c-3.3-.5-6-3.3-6-7.2C4.6 5 7.7 1.8 12 1.8Z"
-                fill="currentColor"
-                opacity="0.15"
-            />
-            <path
-                d="M12 1.8c4.3 0 7.4 3.2 7.4 7.3 0 3.9-2.7 6.7-6 7.2v3.1a1.4 1.4 0 0 1-2.8 0v-3.1c-3.3-.5-6-3.3-6-7.2C4.6 5 7.7 1.8 12 1.8Z"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinejoin="round"
-            />
-            {/* Holes */}
-            <circle cx="9.6" cy="7.6" r="1" fill="currentColor" />
-            <circle cx="14.4" cy="7.6" r="1" fill="currentColor" />
-            <circle cx="12" cy="10.4" r="1" fill="currentColor" />
-        </svg>
-    );
-}
-
-/** Hero illustration featuring the brand logo. */
+/**
+ * Hero illustration: a pickleball court rendered as a tilted 3D slab with a
+ * ball rallying across the net. Motion comes from the shared `.pickleball-ball`
+ * animation in app.css, which pauses under `prefers-reduced-motion`.
+ */
 function CourtIllustration() {
     return (
-        <div className="relative flex aspect-4/3 w-full items-center justify-center">
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/25 via-primary/5 to-transparent blur-2xl" />
-            {/* Pure logo with a soft border + shadow */}
-            <img
-                src="/storage/images/logo.png"
-                alt={`${BRAND} pickleball courts logo`}
-                className="relative h-full max-h-[26rem] w-auto rounded-3xl border border-border object-contain shadow-2xl"
-            />
+        <div className="relative w-full">
+            <div
+                className="relative w-full perspective-[1600px]"
+                role="img"
+                aria-label={`${BRAND} — a pickleball rallying across a court`}
+            >
+                <div
+                    className="relative aspect-16/10 w-full transform-[rotateX(17deg)_rotateZ(-3deg)] transform-3d"
+                    aria-hidden="true"
+                >
+                    {/* The slab's side wall, showing the court's thickness. */}
+                    <div className="absolute inset-0 translate-y-3.5 rounded-4xl bg-blue-800 shadow-2xl shadow-primary/30" />
+
+                    {/* Playing surface. */}
+                    <div className="absolute inset-0 overflow-hidden rounded-4xl bg-gradient-to-br from-primary to-blue-700">
+                        {/* Court boundary and interior lines. */}
+                        <div className="absolute inset-[9%] border-2 border-white/90">
+                            {/* Non-volley zones — the "kitchen" — either side of the net. */}
+                            <div className="absolute inset-y-0 left-1/2 w-[15%] -translate-x-full border-r-2 border-white/80" />
+                            <div className="absolute inset-y-0 left-1/2 w-[15%] border-l-2 border-white/80" />
+                            {/* Center service lines on each half. */}
+                            <div className="absolute top-1/2 left-0 h-0.5 w-[35%] bg-white/80" />
+                            <div className="absolute top-1/2 right-0 h-0.5 w-[35%] bg-white/80" />
+                        </div>
+
+                        {/* The net, laid flat across the middle of the surface. */}
+                        <div className="absolute inset-y-[6%] left-1/2 w-1 -translate-x-1/2 rounded-full bg-slate-800/80" />
+
+                        {/* The rallying ball, with its shadow tracking underneath. */}
+                        <span
+                            className="pickleball-ball absolute z-10 size-6 rounded-full bg-yellow-300 shadow-lg ring-2 ring-yellow-500/80"
+                            style={{ top: '28%', left: '14%' }}
+                        >
+                            {/* Perforations that make the ball read as a pickleball. */}
+                            <span className="absolute top-[22%] left-[26%] size-[14%] rounded-full bg-yellow-600/70" />
+                            <span className="absolute top-[46%] left-[58%] size-[14%] rounded-full bg-yellow-600/70" />
+                            <span className="absolute top-[68%] left-[32%] size-[14%] rounded-full bg-yellow-600/70" />
+                            <span className="pickleball-ball-shadow absolute -bottom-2 left-1/2 h-1 w-[120%] -translate-x-1/2 rounded-full bg-black/40 blur-[2px]" />
+                        </span>
+                    </div>
+
+                    {/* Net post, counter-rotated so it stands upright off the slab. */}
+                    <div className="absolute top-[6%] left-1/2 h-[22%] w-1 origin-bottom -translate-x-1/2 transform-[rotateX(-17deg)] rounded-t-full bg-slate-800" />
+                </div>
+            </div>
+
+            {/* Social-proof badge, overlapping the near corner of the court. */}
+            <div className="absolute right-2 -bottom-4 flex size-24 flex-col items-center justify-center gap-1 rounded-full bg-card px-4 text-center shadow-xl ring-1 ring-border sm:right-6">
+                <Users className="size-5 text-primary" />
+                <span className="text-[10px] leading-tight font-medium text-muted-foreground">
+                    Join thousands of pickleball players
+                </span>
+            </div>
         </div>
     );
 }
 
 type Feature = {
-    icon: typeof CalendarCheck;
+    icon: typeof CalendarDays;
     title: string;
     body: string;
 };
 
 const FEATURES: Feature[] = [
     {
-        icon: MapPin,
-        title: 'Find your court',
-        body: 'Browse indoor and outdoor courts with live availability and clear hourly rates.',
+        icon: CalendarDays,
+        title: 'Book Instantly',
+        body: 'Reserve courts in just a few taps. Real-time availability.',
     },
     {
-        icon: Clock,
-        title: 'Book by the hour',
-        body: 'Pick a date and time in seconds. Your slot is held while you check out.',
-    },
-    {
-        icon: Dumbbell,
-        title: 'Rent equipment',
-        body: 'No paddle or balls? Add rentals to your booking — stock is reserved for your slot.',
+        icon: ShoppingBag,
+        title: 'Rent Equipment',
+        body: 'Paddles, balls, and more. Add to your booking.',
     },
     {
         icon: CreditCard,
-        title: 'Pay online',
-        body: 'Secure GCash checkout via PayMongo. Instant confirmation, no counter queue.',
+        title: 'Pay Securely',
+        body: 'Safe & fast payments via GCash.',
     },
     {
-        icon: ShieldCheck,
-        title: 'Guaranteed slot',
-        body: 'Every booking is locked to a single court and time — no double-booking, ever.',
-    },
-    {
-        icon: CalendarCheck,
-        title: 'Manage bookings',
-        body: 'View upcoming games, past sessions and payment history from one dashboard.',
+        icon: Bell,
+        title: 'Get Confirmed',
+        body: 'Instant booking confirmation and reminders.',
     },
 ];
 
@@ -117,7 +130,12 @@ const STEPS = [
     },
 ];
 
-export default function Welcome() {
+type WelcomeProps = {
+    /** Active rentals previewed in the equipment section. */
+    equipment: { data: Equipment[] };
+};
+
+export default function Welcome({ equipment }: WelcomeProps) {
     const { auth } = usePage().props;
     const isAuthed = Boolean(auth.user);
 
@@ -148,7 +166,7 @@ export default function Welcome() {
                             href="/"
                             className="flex items-center gap-2 font-semibold"
                         >
-                            <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                                 <PaddleMark className="size-5" />
                             </span>
                             <span className="font-brand text-2xl text-primary">
@@ -208,23 +226,49 @@ export default function Welcome() {
                 </header>
 
                 {/* Hero */}
-                <section className="relative overflow-hidden">
+                <section className="relative overflow-hidden bg-gradient-to-b from-primary/7 via-primary/3 to-background">
+                    {/* Decorative background: soft blobs, dot grids and a
+                        pickleball peeking in from the left edge. */}
                     <div
-                        className="pointer-events-none absolute inset-0 -z-10 opacity-60"
-                        style={{
-                            background:
-                                'radial-gradient(60% 50% at 80% 0%, var(--accent) 0%, transparent 60%)',
-                        }}
-                    />
-                    <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-16 lg:grid-cols-2 lg:py-24">
+                        className="pointer-events-none absolute inset-0"
+                        aria-hidden="true"
+                    >
+                        <div className="absolute -top-24 right-1/4 size-96 rounded-full bg-primary/6" />
+                        <div className="absolute right-0 bottom-0 size-120 translate-x-1/4 translate-y-1/3 rounded-full bg-primary/5" />
+                        <div
+                            className="absolute top-16 right-16 h-16 w-24 text-primary/25"
+                            style={{
+                                backgroundImage:
+                                    'radial-gradient(currentColor 1.5px, transparent 1.5px)',
+                                backgroundSize: '14px 14px',
+                            }}
+                        />
+                        <div
+                            className="absolute right-24 bottom-16 h-6 w-32 text-primary/25"
+                            style={{
+                                backgroundImage:
+                                    'radial-gradient(currentColor 1.5px, transparent 1.5px)',
+                                backgroundSize: '16px 16px',
+                            }}
+                        />
+                        <div className="absolute bottom-16 -left-8 size-20 rounded-full border-2 border-primary/10 bg-card/70">
+                            <span className="absolute top-[30%] left-[45%] size-2 rounded-full bg-primary/15" />
+                            <span className="absolute top-[55%] left-[65%] size-2 rounded-full bg-primary/15" />
+                            <span className="absolute top-[70%] left-[40%] size-2 rounded-full bg-primary/15" />
+                        </div>
+                    </div>
+
+                    <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-16 lg:grid-cols-[1fr_1.1fr] lg:py-24">
                         <div className="flex flex-col items-start gap-6">
-                            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
+                            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-medium">
                                 <Sparkles className="size-3.5 text-primary" />
                                 Book, rent &amp; play in minutes
                             </span>
-                            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-                                Your next{' '}
-                                <span className="text-primary">pickleball</span>{' '}
+                            <h1 className="text-4xl leading-[1.08] font-bold tracking-tight sm:text-5xl lg:text-[3.5rem]">
+                                Your next
+                                <br />
+                                <span className="text-primary">pickleball</span>
+                                <br />
                                 game starts here.
                             </h1>
                             <p className="max-w-md text-lg text-muted-foreground">
@@ -234,7 +278,7 @@ export default function Welcome() {
                             </p>
                             <div className="flex flex-col gap-3 sm:flex-row">
                                 {isAuthed ? (
-                                    <Button asChild size="lg">
+                                    <Button asChild size="lg" className="h-11">
                                         <Link href={dashboard()}>
                                             {primaryLabel}
                                             <ArrowRight className="size-4" />
@@ -243,6 +287,7 @@ export default function Welcome() {
                                 ) : (
                                     <Button
                                         size="lg"
+                                        className="h-11"
                                         onClick={() => openAuth('register')}
                                     >
                                         {primaryLabel}
@@ -253,6 +298,7 @@ export default function Welcome() {
                                     <Button
                                         size="lg"
                                         variant="outline"
+                                        className="h-11"
                                         onClick={() => openAuth('login')}
                                     >
                                         I already have an account
@@ -269,7 +315,7 @@ export default function Welcome() {
                                         key={item}
                                         className="flex items-center gap-1.5"
                                     >
-                                        <Check className="size-4 text-primary" />
+                                        <CircleCheck className="size-4 text-primary" />
                                         {item}
                                     </li>
                                 ))}
@@ -281,37 +327,35 @@ export default function Welcome() {
                 </section>
 
                 {/* Features */}
-                <section
-                    id="features"
-                    className="border-t border-border bg-muted/30 py-20"
-                >
+                <section id="features" className="py-20">
                     <div className="mx-auto w-full max-w-6xl px-6">
-                        <div className="mx-auto max-w-2xl text-center">
-                            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                        <div className="text-center">
+                            <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">
+                                Features
+                            </p>
+                            <h2 className="mt-3 text-3xl font-bold tracking-tight">
                                 Everything you need to play
                             </h2>
-                            <p className="mt-3 text-muted-foreground">
-                                From finding an open court to gearing up,{' '}
-                                {BRAND} handles the whole booking in one smooth
-                                flow.
-                            </p>
+                            <span className="mx-auto mt-4 block h-1 w-12 rounded-full bg-primary" />
                         </div>
 
-                        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             {FEATURES.map((feature) => (
                                 <div
                                     key={feature.title}
-                                    className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-6 transition-shadow hover:shadow-md"
+                                    className="flex items-start gap-3.5 rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
                                 >
-                                    <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                         <feature.icon className="size-5" />
                                     </span>
-                                    <h3 className="font-semibold">
-                                        {feature.title}
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        {feature.body}
-                                    </p>
+                                    <div className="flex flex-col gap-1">
+                                        <h3 className="text-[0.9375rem] font-semibold">
+                                            {feature.title}
+                                        </h3>
+                                        <p className="text-[0.8125rem] leading-snug text-muted-foreground">
+                                            {feature.body}
+                                        </p>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -319,7 +363,10 @@ export default function Welcome() {
                 </section>
 
                 {/* How it works */}
-                <section id="how-it-works" className="py-20">
+                <section
+                    id="how-it-works"
+                    className="border-t border-border py-20"
+                >
                     <div className="mx-auto w-full max-w-6xl px-6">
                         <div className="mx-auto max-w-2xl text-center">
                             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -392,46 +439,29 @@ export default function Welcome() {
                             <p className="mb-4 text-sm font-medium text-muted-foreground">
                                 Add to your booking
                             </p>
+                            {equipment.data.length === 0 && (
+                                <p className="py-3 text-sm text-muted-foreground">
+                                    Rentals are being restocked — check back
+                                    soon.
+                                </p>
+                            )}
                             <div className="flex flex-col divide-y divide-border">
-                                {[
-                                    {
-                                        name: 'Pro Graphite Paddle',
-                                        price: '₱50 / hr',
-                                        qty: 2,
-                                    },
-                                    {
-                                        name: 'Ball Set (3)',
-                                        price: '₱30 / hr',
-                                        qty: 1,
-                                    },
-                                    {
-                                        name: 'Court Shoes',
-                                        price: '₱40 / hr',
-                                        qty: 0,
-                                    },
-                                ].map((item) => (
+                                {equipment.data.map((item) => (
                                     <div
-                                        key={item.name}
-                                        className="flex items-center justify-between py-3"
+                                        key={item.id}
+                                        className="flex items-center justify-between gap-4 py-3"
                                     >
-                                        <div>
-                                            <p className="text-sm font-medium">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-medium">
                                                 {item.name}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
-                                                {item.price}
+                                                {item.hourly_rate_formatted} /
+                                                hr &middot; {item.type_label}
                                             </p>
                                         </div>
-                                        <span
-                                            className={
-                                                item.qty > 0
-                                                    ? 'rounded-lg bg-primary/10 px-2.5 py-1 text-sm font-semibold text-primary'
-                                                    : 'text-sm text-muted-foreground'
-                                            }
-                                        >
-                                            {item.qty > 0
-                                                ? `× ${item.qty}`
-                                                : 'Add'}
+                                        <span className="shrink-0 rounded-lg bg-primary/10 px-2.5 py-1 text-sm font-semibold text-primary">
+                                            Add
                                         </span>
                                     </div>
                                 ))}

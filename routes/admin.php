@@ -5,17 +5,17 @@ use App\Http\Controllers\Admin\CourtAvailabilityController;
 use App\Http\Controllers\Admin\CourtBlockController;
 use App\Http\Controllers\Admin\CourtController;
 use App\Http\Controllers\Admin\CourtScheduleController;
-use App\Http\Controllers\Admin\DailyScheduleController;
 use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\DailyScheduleController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EquipmentController;
 use App\Http\Controllers\Admin\OpenPlayController;
 use App\Http\Controllers\Admin\OpenPlayGameController;
 use App\Http\Controllers\Admin\OpenPlayGameSubmissionController;
 use App\Http\Controllers\Admin\OpenPlayMatchupController;
-use App\Http\Controllers\Admin\SeasonController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SeasonController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\WalkInBookingController;
 use Illuminate\Support\Facades\Route;
@@ -49,7 +49,7 @@ Route::middleware(['auth', 'verified', 'admin'])
             ->name('courts.blocks.destroy');
 
         Route::resource('courts', CourtController::class)
-            ->only(['index', 'create', 'store', 'edit', 'update']);
+            ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
 
         // Rentable equipment (paddles, balls, etc.). Toggle-status declared
         // before the resource so it isn't shadowed by resource routes.

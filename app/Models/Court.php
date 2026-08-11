@@ -87,6 +87,14 @@ class Court extends Model
     }
 
     /**
+     * @return HasMany<OpenPlaySession, $this>
+     */
+    public function openPlaySessions(): HasMany
+    {
+        return $this->hasMany(OpenPlaySession::class);
+    }
+
+    /**
      * Scope a query to only active courts.
      *
      * @param  Builder<Court>  $query

@@ -17,8 +17,9 @@ class UpdateSettingsRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * Payment provider secrets are intentionally absent — those live in
-     * environment configuration, never in application settings.
+     * PayMongo credentials use `sometimes`: a key that is absent leaves the
+     * stored value untouched (so the browser never has to echo a secret back),
+     * while an explicitly empty key clears it and restores the .env fallback.
      *
      * @return array<string, array<int, string>>
      */
@@ -35,6 +36,10 @@ class UpdateSettingsRequest extends FormRequest
             'advance_booking_days' => ['required', 'integer', 'min:1', 'max:365'],
 
             'gcash_enabled' => ['required', 'boolean'],
+
+            'paymongo_public_key' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'paymongo_secret_key' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'paymongo_webhook_secret' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 }

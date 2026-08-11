@@ -3,7 +3,8 @@ import type { BookingSlot } from '@/types';
 
 type SlotGridProps = {
     slots: BookingSlot[];
-    selected: string | null;
+    /** Every hour currently in the selection, in order. */
+    selected: string[];
     onSelect: (time: string) => void;
 };
 
@@ -16,10 +17,10 @@ export function SlotGrid({ slots, selected, onSelect }: SlotGridProps) {
         <div
             className="grid grid-cols-3 gap-2 sm:grid-cols-4"
             role="group"
-            aria-label="Available start times"
+            aria-label="Available times"
         >
             {slots.map((slot) => {
-                const isSelected = slot.time === selected;
+                const isSelected = selected.includes(slot.time);
 
                 return (
                     <button

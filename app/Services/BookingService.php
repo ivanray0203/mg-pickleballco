@@ -42,7 +42,7 @@ class BookingService
         $court = Court::findOrFail($data['court_id']);
         $duration = intdiv($this->toMinutes($end) - $this->toMinutes($start), 60);
 
-        $this->assertWithinLimits($date, $duration);
+        $this->assertWithinLimits($date, $start, $duration);
 
         return DB::transaction(function () use ($court, $date, $start, $end, $duration, $data, $status) {
             // Concurrency-safe overlap check: lock the court's reserving rows
@@ -143,11 +143,16 @@ class BookingService
     }
 
     /**
-     * Enforce the configurable booking limits: maximum duration and how far in
-     * advance a booking may be placed. Values come from the settings access
-     * layer, never hardcoded here.
+     * Enforce the configurable booking limits: maximum duration, how far in
+     * advance a booking may be placed, and that the slot is not already in the
+     * past. Values come from the settings access layer, never hardcoded here.
+     *
+     * The past check allows the hour currently in progress so a counter
+     * (walk-in) booking can still be taken for the ongoing hour; only hours
+     * that have completely elapsed are rejected. The customer-facing selection
+     * screen is stricter and offers future hours only.
      */
-    private function assertWithinLimits(Carbon $date, int $duration): void
+    private function assertWithinLimits(Carbon $date, string $start, int $duration): void
     {
         if ($duration > $this->settings->maxBookingHours()) {
             throw ValidationException::withMessages([
@@ -158,6 +163,12 @@ class BookingService
         if ($date->lt(Carbon::today())) {
             throw ValidationException::withMessages([
                 'booking_date' => 'Bookings cannot be made in the past.',
+            ]);
+        }
+
+        if ($date->copy()->setTimeFromTimeString($start)->addHour()->lte(Carbon::now())) {
+            throw ValidationException::withMessages([
+                'start_time' => 'That time has already passed.',
             ]);
         }
 
@@ -191,7 +202,7 @@ class BookingService
 
         $duration = intdiv($this->toMinutes($end) - $this->toMinutes($start), 60);
 
-        $this->assertWithinLimits($date, $duration);
+        $this->assertWithinLimits($date, $start, $duration);
 
         if (! $this->availability->isBookable($court, $date, $start, $end)) {
             throw ValidationException::withMessages([

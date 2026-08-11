@@ -12,6 +12,26 @@ export function formatHour(time: string): string {
 }
 
 /**
+ * Format a date as a local "YYYY-MM-DD" string. `toISOString()` is not used
+ * because it converts to UTC, which can land on the wrong calendar day.
+ */
+export function toDateString(value: Date): string {
+    return [
+        value.getFullYear(),
+        String(value.getMonth() + 1).padStart(2, '0'),
+        String(value.getDate()).padStart(2, '0'),
+    ].join('-');
+}
+
+/**
+ * The whole-hour "HH:00" string the given moment falls in, comparable against
+ * slot times with a plain string comparison since both are zero-padded.
+ */
+export function toHourString(value: Date): string {
+    return `${String(value.getHours()).padStart(2, '0')}:00`;
+}
+
+/**
  * Whole-hour options (00:00–23:00) for time selects, enforcing the core
  * booking rule that bookings only happen on the hour.
  */

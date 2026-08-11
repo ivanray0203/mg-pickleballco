@@ -53,7 +53,9 @@ class WalkInBookingController extends Controller
                     ? Carbon::parse($request->string('date')->toString())
                     : $today->copy();
 
-                $availability = $selection->forCourtAndDate($court, $date);
+                // A walk-in is taken at the counter for a customer standing
+                // there now, so the hour in progress stays selectable.
+                $availability = $selection->forCourtAndDate($court, $date, includeCurrentHour: true);
             }
         }
 

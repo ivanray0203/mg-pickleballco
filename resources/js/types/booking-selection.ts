@@ -1,6 +1,14 @@
+/**
+ * Why an hour can or cannot be booked. `unavailable` covers court blocks
+ * (maintenance, cleaning) — the specific reason is never exposed.
+ */
+export type BookingSlotState =
+    'available' | 'booked' | 'open_play' | 'unavailable' | 'past';
+
 export type BookingSlot = {
     time: string;
     label: string;
+    state: BookingSlotState;
     available: boolean;
     max_duration: number;
 };

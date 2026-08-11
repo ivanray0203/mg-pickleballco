@@ -32,6 +32,9 @@ class CourtAvailabilityService
 
     public const STATUS_BOOKED = 'booked';
 
+    /** Held by an open-play session, which occupies the whole court. */
+    public const STATUS_OPEN_PLAY = 'open_play';
+
     /**
      * Build the availability breakdown for a court on a single date.
      *
@@ -186,8 +189,9 @@ class CourtAvailabilityService
     }
 
     /**
-     * Decide a slot's status. Booked wins over blocked, which wins over free.
-     * Open-play sessions occupy the window like a booking.
+     * Decide a slot's status. Booked wins over open play, which wins over a
+     * block, which wins over free. Open-play sessions occupy the window like a
+     * booking but are reported distinctly so callers can say which it is.
      *
      * @param  Collection<int, CourtBlock>  $blocks
      * @param  Collection<int, array{start: int, end: int}>  $booked
@@ -204,7 +208,7 @@ class CourtAvailabilityService
 
         foreach ($sessions as $range) {
             if ($this->overlaps($slotStart, $slotEnd, $range['start'], $range['end'])) {
-                return [self::STATUS_BLOCKED, 'Open play session'];
+                return [self::STATUS_OPEN_PLAY, 'Open play session'];
             }
         }
 

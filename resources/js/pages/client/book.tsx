@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, CalendarX2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BookingSummary } from '@/components/client/booking-summary';
 import { SlotGrid } from '@/components/client/slot-grid';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { formatHour } from '@/lib/time';
+import { formatHour, toDateString, toHourString } from '@/lib/time';
 import { book } from '@/routes';
 import { review } from '@/routes/book';
 import { show as courtShow } from '@/routes/courts';
@@ -32,6 +32,23 @@ function addHours(time: string, hours: number): string {
     return `${String(hour).padStart(2, '0')}:00`;
 }
 
+/**
+ * The current moment, re-read every half minute. The server already excludes
+ * past dates and elapsed hours when the page renders; this keeps the screen
+ * honest while it stays open across a midnight or an hour boundary.
+ */
+function useNow(): Date {
+    const [now, setNow] = useState(() => new Date());
+
+    useEffect(() => {
+        const timer = window.setInterval(() => setNow(new Date()), 30_000);
+
+        return () => window.clearInterval(timer);
+    }, []);
+
+    return now;
+}
+
 function formatLongDate(value: string): string {
     return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
         month: 'long',
@@ -47,9 +64,21 @@ export default function Book({
     constraints,
 }: BookProps) {
     const courtData = court.data;
+    const now = useNow();
     const [selectedStart, setSelectedStart] = useState<string | null>(null);
     const [duration, setDuration] = useState(1);
     const [notice, setNotice] = useState<string | null>(null);
+
+    const today = toDateString(now);
+
+    // Never offer a date before today, even if the page was rendered before
+    // midnight. The server bound only ever gets stricter, never looser.
+    const minDate = constraints.min_date < today ? today : constraints.min_date;
+
+    // On today, every hour that has already started is closed. `null` on any
+    // other date, where no hour has elapsed.
+    const elapsedThrough =
+        availability.date === today ? toHourString(now) : null;
 
     // Reset the selection whenever the day (and its availability) changes.
     // Adjusting state during render (tracking the previous date) is the
@@ -64,7 +93,9 @@ export default function Book({
     }
 
     const changeDate = (value: string) => {
-        if (!value) {
+        // `min`/`max` on the input guide the picker, but a typed-in date can
+        // still fall outside the window — ignore those rather than round-trip.
+        if (!value || value < minDate || value > constraints.max_date) {
             return;
         }
 
@@ -80,7 +111,36 @@ export default function Book({
         );
     };
 
-    const slots = availability.slots;
+    // Close any hour the clock has passed since the server rendered the page.
+    // This can only take availability away, never grant it.
+    const slots = useMemo(
+        () =>
+            elapsedThrough === null
+                ? availability.slots
+                : availability.slots.map((slot) =>
+                      slot.time <= elapsedThrough
+                          ? {
+                                ...slot,
+                                state: 'past' as const,
+                                available: false,
+                                max_duration: 0,
+                            }
+                          : slot,
+                  ),
+        [availability.slots, elapsedThrough],
+    );
+
+    // Drop a selection the clock has overtaken while the page sat open.
+    if (
+        selectedStart !== null &&
+        elapsedThrough !== null &&
+        selectedStart <= elapsedThrough
+    ) {
+        setSelectedStart(null);
+        setDuration(1);
+        setNotice('That start time has passed. Please choose another hour.');
+    }
+
     const startIndex = selectedStart
         ? slots.findIndex((slot) => slot.time === selectedStart)
         : -1;
@@ -165,6 +225,7 @@ export default function Book({
     };
 
     const canSelectTimes = availability.bookable_date && availability.is_open;
+    const hasSelectableSlot = slots.some((slot) => slot.available);
 
     return (
         <>
@@ -198,7 +259,7 @@ export default function Book({
                                         id="date"
                                         type="date"
                                         value={date}
-                                        min={constraints.min_date}
+                                        min={minDate}
                                         max={constraints.max_date}
                                         onChange={(e) =>
                                             changeDate(e.target.value)
@@ -231,7 +292,7 @@ export default function Book({
                                             available times.
                                         </p>
                                     </div>
-                                ) : availability.slots.length === 0 ? (
+                                ) : slots.length === 0 ? (
                                     <p className="rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
                                         No time slots for this day.
                                     </p>
@@ -242,6 +303,13 @@ export default function Book({
                                             selected={selectedTimes}
                                             onSelect={toggleSlot}
                                         />
+                                        {!hasSelectableSlot && (
+                                            <p className="text-sm text-muted-foreground">
+                                                {elapsedThrough === null
+                                                    ? 'Every hour is taken on this day. Please pick another date.'
+                                                    : 'There are no hours left to book today. Please pick a later date.'}
+                                            </p>
+                                        )}
                                         {notice && (
                                             <p
                                                 role="status"
@@ -258,6 +326,14 @@ export default function Book({
                                             <span className="flex items-center gap-1.5">
                                                 <span className="size-3 rounded bg-primary" />
                                                 Selected
+                                            </span>
+                                            <span className="flex items-center gap-1.5">
+                                                <span className="size-3 rounded border border-amber-500/40 bg-amber-500/10" />
+                                                Booked
+                                            </span>
+                                            <span className="flex items-center gap-1.5">
+                                                <span className="size-3 rounded border border-sky-500/40 bg-sky-500/10" />
+                                                Open play
                                             </span>
                                             <span className="flex items-center gap-1.5">
                                                 <span className="size-3 rounded border border-dashed border-border bg-muted/50" />

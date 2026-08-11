@@ -162,7 +162,7 @@ class DailyScheduleService
                     'detail' => $sessionsByHour[$hour]['occupancy'],
                     'title' => $sessionsByHour[$hour]['title'],
                 ];
-            } elseif ($slot['status'] === CourtAvailabilityService::STATUS_BLOCKED) {
+            } elseif ($slot['status'] !== CourtAvailabilityService::STATUS_AVAILABLE) {
                 $cells[$hour] = [
                     'status' => 'blocked',
                     'detail' => null,

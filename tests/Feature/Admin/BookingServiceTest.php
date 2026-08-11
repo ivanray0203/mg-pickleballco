@@ -22,7 +22,9 @@ beforeEach(function () {
         'closing_time' => '22:00',
         'hourly_rate' => 3000,
     ]);
-    $this->date = Carbon::parse('2026-08-03')->toDateString();
+    // Relative so the suite keeps passing as time moves on; bookings in the
+    // past are rejected by the domain.
+    $this->date = Carbon::today()->addDays(3)->toDateString();
 });
 
 /**
@@ -140,7 +142,7 @@ test('blocked hours cannot be booked', function () {
 
 test('a closed day cannot be booked', function () {
     CourtSchedule::factory()->for($this->court)->closed()->create([
-        'day_of_week' => DayOfWeek::Monday,
+        'day_of_week' => DayOfWeek::from(Carbon::parse($this->date)->dayOfWeek),
     ]);
 
     expect(fn () => $this->service->create(

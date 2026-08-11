@@ -15,6 +15,7 @@ use App\Services\WalkInBookingService;
 use App\Settings\AppSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -79,7 +80,7 @@ class WalkInBookingController extends Controller
      * land on the booking page; GCash bookings redirect to the provider's
      * checkout so the customer can pay before the hold lapses.
      */
-    public function store(StoreWalkInBookingRequest $request, AppSettings $settings): RedirectResponse|Response
+    public function store(StoreWalkInBookingRequest $request, AppSettings $settings): RedirectResponse|HttpResponse
     {
         $data = $request->validated();
 

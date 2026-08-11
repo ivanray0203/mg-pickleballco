@@ -149,10 +149,15 @@ test('a walk-in can be attached to an existing customer', function () {
 test('a gcash walk-in creates a pending booking and a pending payment', function () {
     Notification::fake();
 
+    // Posted as an Inertia visit, so Inertia::location() returns its external
+    // 409 redirect rather than a plain RedirectResponse.
     $this->actingAs($this->admin)
+        ->withHeader('X-Inertia', 'true')
         ->post(route('admin.bookings.walk-in.store'), walkInPayload([
             'payment_method' => PaymentMethod::GCash->value,
-        ]));
+        ]))
+        ->assertStatus(409)
+        ->assertHeader('X-Inertia-Location', 'https://checkout.paymongo.test/cs_test_walkin');
 
     $booking = Booking::query()->latest('id')->firstOrFail();
 

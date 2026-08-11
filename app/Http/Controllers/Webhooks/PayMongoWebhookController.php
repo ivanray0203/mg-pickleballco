@@ -50,6 +50,8 @@ class PayMongoWebhookController extends Controller
             return response()->json(['message' => 'Ignored.']);
         }
 
+        logger("Success");
+
         $this->payments->processWebhook($event);
 
         return response()->json(['message' => 'Processed.']);

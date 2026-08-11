@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\MatchupStatus;
+use App\Enums\OpenPlayGameSubmissionStatus;
 use App\Enums\OpenPlaySessionStatus;
 use App\Enums\RegistrationStatus;
 use App\Enums\SkillLevel;
@@ -11,8 +13,6 @@ use App\Http\Requests\Admin\UpdateOpenPlaySessionRequest;
 use App\Http\Resources\OpenPlayGameResource;
 use App\Http\Resources\OpenPlayRegistrationResource;
 use App\Http\Resources\OpenPlaySessionResource;
-use App\Enums\MatchupStatus;
-use App\Enums\OpenPlayGameSubmissionStatus;
 use App\Models\Court;
 use App\Models\OpenPlayGameSubmission;
 use App\Models\OpenPlayMatchup;
@@ -155,11 +155,15 @@ class OpenPlayController extends Controller
             ->sortBy('user.name')
             ->values();
 
+        // The game log is the only list here that grows without bound over a
+        // session, so it pages under its own key; the roster, queue and pending
+        // submissions stay whole because the recording form reads them all.
         $games = $openPlaySession->games()
             ->with('players.registration.user')
             ->orderByDesc('played_at')
             ->orderByDesc('id')
-            ->get();
+            ->paginate(15, pageName: 'games_page')
+            ->withQueryString();
 
         // Map every registration in the session to a player name so reported
         // submissions (which store registration ids) can be shown by name.

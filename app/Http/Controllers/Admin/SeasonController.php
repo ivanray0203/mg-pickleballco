@@ -29,7 +29,10 @@ class SeasonController extends Controller
     {
         $this->authorize('viewAny', Season::class);
 
-        $seasons = Season::query()->orderByDesc('starts_on')->get();
+        $seasons = Season::query()
+            ->orderByDesc('starts_on')
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('admin/seasons/index', [
             'seasons' => SeasonResource::collection($seasons),

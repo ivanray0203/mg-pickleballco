@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Pencil, Plus, Trophy } from 'lucide-react';
+import { Pagination } from '@/components/shared/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,10 +13,10 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { create, edit, leaderboard } from '@/routes/admin/seasons';
-import type { Season } from '@/types';
+import type { Paginated, Season } from '@/types';
 
 type SeasonsIndexProps = {
-    seasons: { data: Season[] };
+    seasons: Paginated<Season>;
 };
 
 function SeasonActions({ season }: { season: Season }) {
@@ -161,6 +162,8 @@ export default function SeasonsIndex({ seasons }: SeasonsIndexProps) {
                                 </Card>
                             ))}
                         </div>
+
+                        <Pagination meta={seasons.meta} />
                     </>
                 )}
             </div>

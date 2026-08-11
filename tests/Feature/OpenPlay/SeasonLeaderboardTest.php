@@ -101,6 +101,23 @@ test('the leaderboard can be filtered by skill level', function () {
     expect($beginners->pluck('name')->all())->toBe(['Ann']);
 });
 
+test('the seasons list is paginated', function () {
+    // 11 more on top of the season created in beforeEach.
+    Season::factory()->count(11)->create();
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.seasons.index'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('seasons.data', 10)
+            ->where('seasons.meta.total', 12)
+            ->where('seasons.meta.last_page', 2)
+        );
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.seasons.index', ['page' => 2]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('seasons.data', 2));
+});
+
 test('a customer cannot view the admin seasons list', function () {
     $this->actingAs($this->customer)
         ->get(route('admin.seasons.index'))

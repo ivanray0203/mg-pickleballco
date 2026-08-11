@@ -12,9 +12,16 @@ import { MatchQueueCard } from '@/components/admin/open-play/match-queue-card';
 import { SessionStatusBadge } from '@/components/admin/open-play/session-status-badge';
 import { PodiumCard } from '@/components/open-play/podium-card';
 import { StandingsTable } from '@/components/open-play/standings-table';
+import { Pagination } from '@/components/shared/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -47,12 +54,13 @@ import type {
     OpenPlayRegistrationRow,
     OpenPlaySession,
     OpenPlayStanding,
+    Paginated,
 } from '@/types';
 
 type ManageProps = {
     session: { data: OpenPlaySession };
     registrations: { data: OpenPlayRegistrationRow[] };
-    games: { data: OpenPlayGameRow[] };
+    games: Paginated<OpenPlayGameRow>;
     standings: OpenPlayStanding[];
     submissions: OpenPlayPendingSubmission[];
     matchups: OpenPlayMatchupRow[];
@@ -84,7 +92,7 @@ function TeamLine({
 export default function ManageOpenPlaySession({
     session: { data: session },
     registrations: { data: registrations },
-    games: { data: games },
+    games: { data: games, meta: gamesMeta },
     standings,
     submissions,
     matchups,
@@ -565,7 +573,7 @@ export default function ManageOpenPlaySession({
                                         variant="secondary"
                                         className="ml-auto"
                                     >
-                                        {games.length}
+                                        {gamesMeta.total}
                                     </Badge>
                                 </CardTitle>
                             </CardHeader>
@@ -631,6 +639,11 @@ export default function ManageOpenPlaySession({
                                     </ul>
                                 )}
                             </CardContent>
+                            {gamesMeta.last_page > 1 && (
+                                <CardFooter className="border-t border-border pt-4 [&>nav]:w-full">
+                                    <Pagination meta={gamesMeta} />
+                                </CardFooter>
+                            )}
                         </Card>
 
                         {/* Standings preview */}

@@ -50,6 +50,35 @@ test('an admin sees the manage console with roster and games', function () {
         );
 });
 
+test('the manage console pages the game log under its own page key', function () {
+    $a = confirmedRegistration($this->session);
+    $b = confirmedRegistration($this->session);
+
+    foreach (range(1, 17) as $index) {
+        $game = OpenPlayGame::factory()->for($this->session, 'session')->create([
+            'team_a_score' => 11,
+            'team_b_score' => $index % 10,
+            'winning_team' => 'a',
+        ]);
+
+        $game->players()->create(['open_play_registration_id' => $a->id, 'team' => 'a']);
+        $game->players()->create(['open_play_registration_id' => $b->id, 'team' => 'b']);
+    }
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.open-play.manage', $this->session))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('games.data', 15)
+            ->where('games.meta.total', 17)
+            // The roster is never paged: the recording form needs every player.
+            ->has('registrations.data', 2)
+        );
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.open-play.manage', [$this->session, 'games_page' => 2]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('games.data', 2));
+});
+
 test('an admin can check a player in and undo it', function () {
     $registration = confirmedRegistration($this->session);
 
